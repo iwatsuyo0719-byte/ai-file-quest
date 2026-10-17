@@ -1,0 +1,158 @@
+---
+title: "AI FILE QUEST｜詳細設計 Ver.1.1"
+date: 2026-10-17
+base: AI_INBOX/2026-10-17/153115-ai-file-quest-requirements-v1.md（要件 Ver.1.0 FIX）
+status: approved（2026-10-17 ユーザー承認）
+implementer: Claude Code（Opus 5.5・エフォート高）※今回はCodexへ委譲しない（2026-10-17 ユーザー指示）
+---
+
+# AI FILE QUEST｜詳細設計 Ver.1.1（案）
+
+Ver.1.0要件の「§12 未FIX事項」を埋める差分設計。**「案」と書いた値は承認時に確定する**。承認後、このファイルは新規repoの `docs/DESIGN.md` へ移し、HANDOFFからは削除する。
+
+## 0. Ver.1.0からの差分（2026-10-17 ユーザー決定 1A 2A 3A）
+
+| 項目 | 決定 |
+|---|---|
+| 成果物方式 | Stage 1・2＝穴埋め、Stage 3＝カード配置（MVPに含む）。Ver.1.0の「初級＝穴埋めのみ」を修正 |
+| 技術・公開 | 静的Webアプリ（Vite＋TypeScript）、GitHub Pagesで公開、専用repoを新規作成 |
+| 進め方 | 詳細設計（本書）→ 承認 → 実装 |
+| 実装者 | Claude Code Opus 5.5（Codex委譲しない） |
+
+## 1. 技術スタック（案）
+
+- Vite＋TypeScript（strict）。UIフレームワークは**使わない**（Vanilla TS＋小さな描画関数）。3カラム・数画面のため、Reactの導入コストに見合わない
+- CSS：素のCSS＋CSS変数（ダークテーマのトークン）。アイコンはMaterial Symbols Outlined（Google Fonts可否は実装直前に確認）
+- テスト：Vitest（採点ロジック・正規化・保存のユニットテスト）
+- 公開：GitHub Actionsで `vite build` → GitHub Pages。サーバー・外部API・ログインなし
+- 対応：PCブラウザ（Chrome / Edge 最新）。**画面幅の下限1280px**。それ未満は「PCで遊んでください」と表示（スマホ対応はMVP外）
+
+## 2. repo構成（案）
+
+```
+ai-file-quest/
+├─ index.html
+├─ src/
+│  ├─ main.ts            # 起動・画面切替
+│  ├─ state.ts           # ステージ内の一時状態（保存しない）
+│  ├─ save.ts            # localStorage（解放状態・最高点）
+│  ├─ vfs.ts             # 仮想ファイルシステム（読み取り専用）
+│  ├─ scoring.ts         # 採点（純関数）
+│  ├─ ui/                # tree.ts / viewer.ts / panel.ts / result.ts / title.ts
+│  └─ styles/tokens.css
+├─ stages/
+│  ├─ stage01/ files/…（表示用の本文） + stage.json（依頼・設定） + answer.json（正答・採点）
+│  ├─ stage02/ …
+│  └─ stage03/ …
+├─ tests/
+└─ docs/DESIGN.md
+```
+
+**表示データと正答の分離**：`files/` はプレイヤーに見える本文だけ。正答・採点基準は `answer.json` に置き、UIコードは `answer.json` を採点時にしか読まない。（静的サイトなので技術的には覗けるが、MVPでは対策しない。）
+
+## 3. データ構造
+
+```ts
+// stage.json
+type Stage = {
+  id: "stage01" | "stage02" | "stage03";
+  title: string;           // 「ファイルを探せ」
+  request: string;         // チャット依頼文
+  baseDate: string;        // 基準日 "2026-10-01"（「先月」の解釈を固定）
+  conditions: string[];    // 右カラムに常時表示するステージ条件
+  answerMode: "fill" | "cards";
+  form: FillForm | CardForm;
+  hints: [string, string, string]; // 考え方→探索対象→具体的手順
+  requiredFiles: string[];         // 効率計算用：読むべきファイル
+  usefulFiles: string[];           // 読んでも減点しないファイル（指示・README等）
+};
+
+// VFS：ファイルツリーはfiles/の実ディレクトリからビルド時に生成
+type VNode = { path: string; name: string; type: "dir" | "file"; children?: VNode[]; content?: string };
+
+// answer.json
+type AnswerKey = {
+  slots: Record<string, { accept: string[]; normalize: "number" | "text" | "percent" }>;
+  requiredEvidence: { slot: string; file: string; line: number }[];  // どの行が根拠か
+  rules: { id: string; desc: string; check: RuleCheck }[];          // 指示遵守チェック
+  fatal: { id: string; desc: string; check: RuleCheck }[];          // 重大違反（即不合格）
+};
+```
+
+## 4. 操作仕様
+
+- **ツリー**：フォルダをクリックで開閉、ファイルをクリックで中央に表示。開いたファイルは閲覧履歴に記録（同じファイルの再表示は「反復」としてカウント）
+- **ビューア**：md/txtは行番号付きのプレーン表示（Markdownは見出し・太字だけ軽く装飾）。csvは表で表示。**行をクリックで選択 →「証拠に追加」ボタン**で右カラムの証拠リストへ保存（ファイル名＋行番号＋本文）
+- **証拠リスト**：最大10件。削除できる。各証拠は成果物スロットへ紐付け可能（ドラッグせず、スロット横のプルダウンで選ぶ）
+- **穴埋め（fill）**：テキスト入力欄＋根拠プルダウン。全スロット入力で「提出」が有効
+- **カード配置（cards）**：証拠から作られた「値カード」と、選択肢の「ラベルカード」を表のセルへクリックで配置（選択→セルをクリック）。キーボード操作も可
+- **ヒント**：右カラムの「ヒント」ボタンで1段階ずつ開く
+- **リトライ**：ステージ内の閲覧履歴・証拠・回答・ヒント使用を初期化
+
+## 5. 採点（案）
+
+100点＝正確性40＋網羅性25＋根拠・指示遵守20＋探索効率15。
+
+| 項目 | 計算 |
+|---|---|
+| 正確性40 | 数値・事実スロットの正答率 × 40（正規化後に `accept` と一致） |
+| 網羅性25 | 必須スロット・表セルの記入率 × 25（空欄・「未入力」は0） |
+| 根拠・指示遵守20 | 根拠紐付けが正しいスロット率 × 10 ＋ ルール充足率 × 10 |
+| 探索効率15 | 15 −（不要ファイル閲覧 × 2）−（反復表示 4回目以降 × 1）、下限5 |
+
+- `requiredFiles`・`usefulFiles` の閲覧は減点しない。**下限5点**により試行錯誤だけで不合格にならない
+- ヒント：1段目0点、2段目−3点、3段目−5点（合計の最大−8、総得点から引く）。Stage 1はヒント減点なし
+- **重大違反**（`fatal`）：点数にかかわらず不合格・ランク「—」。MVPでの対象は「存在しない数値を回答（どのファイルにも無い値を根拠付きで提出）」のみ
+- 正規化：全角→半角、カンマ・「円」・空白を除去して数値比較。率は小数第1位まで（四捨五入）で比較、`%` 有無は問わない
+- ランク：S 90〜／A 80〜／B 70〜／C 〜69。**70点以上でクリア**
+
+## 6. 画面遷移
+
+タイトル（ステージ選択：解放・ロック・最高点・ランクを表示）→ ゲーム画面（3カラム）→ 結果画面（総得点・ランク・4項目内訳・遵守したルール／守れなかったルール・閲覧履歴・改善点・「リトライ」「次へ」「ステージ選択」）
+
+## 7. 保存（localStorage）
+
+```ts
+// key: "aifq.save.v1"
+type Save = { version: 1; unlocked: string[]; best: Record<string, { score: number; rank: string }> };
+```
+
+- 初回は `unlocked: ["stage01"]`。読み込み失敗・形式不一致時は初期値で上書きせず初期値で起動する（壊れたデータは消さない）
+- 最高点は**今回の点が上回った時だけ**更新
+
+## 8. MVPステージ詳細（本文は実装時に作る。ここは仕様）
+
+### Stage 01 ファイルを探せ（fill・ヒント減点なし）
+- 依頼：「9月の売上金額を教えてください。」
+- ファイル：`README.md`、`DATA/august.csv`、`DATA/september.csv`、`NOTES/memo.md`（memoに「9月は好調だった気がする」等の曖昧な記述＝ダミー）
+- 正答：`september.csv` の合計行の金額（例：1,250,000円）。根拠＝その行
+- ルール：なし（根拠紐付けの10点は正答根拠のみで評価、ルール10点は自動満点）
+
+### Stage 02 AIのルールを守れ（fill）
+- 依頼：「社内ルールに従って先月の売上を回答してください。」基準日 2026-10-01 → 先月＝9月
+- ファイル：`AGENTS.md`（「売上は税抜きで回答」「数値は `RULES/accounting.md` の定義に従う」「回答末尾に参照ファイル名を書く」）、`README.md`、`DATA/sales_august.csv`、`DATA/sales_september.csv`（税込列と税抜列がある）、`RULES/accounting.md`
+- スロット：金額、税区分（選択式：税込／税抜）、参照ファイル
+- ルール：①税抜を選ぶ ②参照ファイルが `DATA/sales_september.csv` ③AGENTS.mdを閲覧している
+- 典型誤答：税込額（正確性0、ルール①未充足）
+
+### Stage 03 複数資料を照合せよ（cards）
+- 依頼：「8月と9月の売上を比較し、増減額と増減率をまとめてください。」
+- ファイル：`AGENTS.md`（「比較はTEMPLATES/comparison.mdの形式」「増減率は小数第1位」）、`DATA/august.csv`、`DATA/september.csv`、`DATA/notes.md`（「8月は返品を差し引く前の数字が混じっている」等の照合ポイント）、`REFERENCES/glossary.md`（増減率の定義）、`TEMPLATES/comparison.md`
+- 表：行＝8月／9月／増減額／増減率。値カードは証拠から生成、計算値（増減額・率）はカード候補に正誤混在で用意（計算はプレイヤーが判断）
+- ルール：①返品控除後の8月数値を使う ②率が小数第1位 ③テンプレート列順どおり
+
+## 9. 受け入れ条件との対応（Ver.1.0 §11）
+
+| 条件 | 確認方法 |
+|---|---|
+| 1. 3ステージを通しで遊べる | 手動テストプレイ（各ステージ正答ルート・誤答ルート） |
+| 2. フォルダを開いて読める | 手動＋ツリー生成のユニットテスト |
+| 3. 指示ファイルの条件が判定に反映 | Stage 02税込回答で減点・Stage 03率の桁違いで減点するテスト |
+| 4. 正誤判定と採点表示 | scoring.tsのユニットテスト（正答満点・誤答・重大違反） |
+| 5. 解放・最高点・リトライ | save.tsのテスト＋手動（リロード後も保持、低い点で上書きしない） |
+
+## 10. 実装に入る前に残る確認
+
+- Google Fonts（Material Symbols／日本語フォント）の利用可否（DESIGN_ROUTERの規則）
+- repo名 `ai-file-quest`・Public（GitHub Pages無料枠のため）でよいか
+- 本書「案」の数値（効率の減点、ヒント減点、画面下限1280px）
