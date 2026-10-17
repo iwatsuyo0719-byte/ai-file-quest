@@ -150,7 +150,10 @@ function startStage(id: StageId): void {
       setFillValue(s, slot, v);
       updateComposer(panelCol, s, panelOn);
     },
-    onFillEvidence: (slot, evId) => setFillEvidence(s, slot, evId),
+    onFillEvidence: (slot, evId) => {
+      setFillEvidence(s, slot, evId);
+      updateComposer(panelCol, s, panelOn);
+    },
     onSelectCard: (cardId) => {
       selectCard(s, cardId);
       refresh();

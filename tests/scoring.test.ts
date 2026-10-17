@@ -12,6 +12,7 @@ import {
   removeEvidence,
   setFillEvidence,
   setFillValue,
+  slotsMissingEvidence,
   toSubmission,
 } from "../src/state";
 import type { StageId } from "../src/types";
@@ -59,6 +60,18 @@ describe("Stage 01 ファイルを探せ", () => {
     const r = grade(correct());
     expect(r).toMatchObject({ accuracy: 40, coverage: 25, compliance: 20, efficiency: 15, total: 100, rank: "S" });
     expect(r.cleared).toBe(true);
+  });
+
+  it("値を入れたのに根拠を選んでいない欄を検出する（提出は止めない）", () => {
+    const s = newGame("stage01");
+    expect(slotsMissingEvidence(s)).toEqual([]); // 未入力の欄は対象外
+    setFillValue(s, "amount", "1250000");
+    expect(slotsMissingEvidence(s).map((x) => x.id)).toEqual(["amount"]);
+    expect(canSubmit(s)).toBe(true);
+    const ev = collect(s, "DATA/september.csv", 7);
+    setFillEvidence(s, "amount", ev);
+    expect(slotsMissingEvidence(s)).toEqual([]);
+    expect(slotsMissingEvidence(newGame("stage03"))).toEqual([]);
   });
 
   it("全スロットを入力するまで提出できない", () => {

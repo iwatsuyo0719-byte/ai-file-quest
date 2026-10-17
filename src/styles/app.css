@@ -233,9 +233,16 @@ select.input { appearance: auto; }
 .hint-step { display: block; font-size: 11px; color: var(--warn); letter-spacing: .06em; }
 .block > .btn-ghost { justify-self: start; }
 
+.composer-wrap { flex: none; display: grid; gap: 8px; margin: 0 12px 12px; }
+.ev-warning {
+  display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-radius: var(--r);
+  background: rgba(229, 192, 123, 0.12); border: 1px solid rgba(229, 192, 123, 0.4); color: var(--warn); font-size: 12.5px;
+}
+.ev-warning span:last-child { color: var(--text-2); }
+.input.needs-ev { border-color: var(--warn); box-shadow: 0 0 0 3px rgba(229, 192, 123, 0.14); }
 .composer {
   flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin: 0 12px 12px; padding: 10px 10px 10px 14px; border: 1px solid var(--border-strong); border-radius: var(--r-lg);
+  padding: 10px 10px 10px 14px; border: 1px solid var(--border-strong); border-radius: var(--r-lg);
   background: var(--surface);
 }
 .btn-submit { height: 36px; border-radius: var(--r); }

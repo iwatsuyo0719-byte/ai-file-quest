@@ -5,6 +5,7 @@ import {
   type Card,
   MAX_EVIDENCE,
   placedCardIds,
+  slotsMissingEvidence,
   type GameState,
 } from "../state";
 import type { CardForm, FillForm, FillSlot } from "../types";
@@ -136,6 +137,7 @@ function renderFill(s: GameState, form: FillForm, on: PanelHandlers): HTMLElemen
             {
               id: evId,
               class: "input input-sm",
+              "data-ev-slot": slot.id,
               onchange: (e: Event) => on.onFillEvidence(slot.id, (e.target as HTMLSelectElement).value || null),
             },
             h("option", { value: "" }, s.evidence.length ? "根拠を選ぶ" : "根拠なし（先に証拠を追加）"),
@@ -277,6 +279,7 @@ function renderHints(s: GameState, on: PanelHandlers): HTMLElement {
 
 function renderComposer(s: GameState, on: PanelHandlers): HTMLElement {
   const ok = canSubmit(s);
+  const missing = slotsMissingEvidence(s);
   const reason = ok
     ? "提出すると採点されます。提出後は変更できません。"
     : s.stage.answerMode === "fill"
@@ -284,19 +287,46 @@ function renderComposer(s: GameState, on: PanelHandlers): HTMLElement {
       : "表にカードを1枚以上置くと提出できます";
   return h(
     "div",
-    { class: "composer" },
-    h("p", { class: "muted small", id: "submit-reason" }, reason),
+    { class: "composer-wrap" },
+    missing.length
+      ? h(
+          "p",
+          { class: "ev-warning", role: "status" },
+          icon("link_off", "sm"),
+          h(
+            "span",
+            null,
+            `根拠が未選択の欄があります：${missing.map((m) => m.label).join("、")}。`,
+            s.evidence.length
+              ? "欄の下の「根拠」で、証拠を選んでください。"
+              : "根拠にする行を「証拠に追加」してから選んでください。",
+            "（このままでも提出できます）",
+          ),
+        )
+      : null,
     h(
-      "button",
-      { class: "btn btn-accent btn-submit", disabled: !ok, "aria-describedby": "submit-reason", onclick: () => on.onSubmit() },
-      icon("arrow_upward", "sm"),
-      "成果物を提出",
+      "div",
+      { class: "composer" },
+      h("p", { class: "muted small", id: "submit-reason" }, reason),
+      h(
+        "button",
+        { class: "btn btn-accent btn-submit", disabled: !ok, "aria-describedby": "submit-reason", onclick: () => on.onSubmit() },
+        icon("arrow_upward", "sm"),
+        "成果物を提出",
+      ),
     ),
   );
 }
 
+function markMissing(root: ParentNode, s: GameState): void {
+  const missing = new Set(slotsMissingEvidence(s).map((m) => m.id));
+  root.querySelectorAll<HTMLSelectElement>("select[data-ev-slot]").forEach((sel) => {
+    sel.classList.toggle("needs-ev", missing.has(sel.dataset.evSlot!));
+  });
+}
+
 export function renderPanel(s: GameState, on: PanelHandlers): HTMLElement {
-  return h(
+  const panel = h(
     "aside",
     { class: "panel", "aria-label": "依頼と成果物" },
     h(
@@ -309,9 +339,12 @@ export function renderPanel(s: GameState, on: PanelHandlers): HTMLElement {
     ),
     renderComposer(s, on),
   );
+  markMissing(panel, s);
+  return panel;
 }
 
-/** 入力中に再描画せず、提出ボタンだけ更新する */
+/** 入力中に再描画せず、提出欄と根拠の注意表示だけ更新する */
 export function updateComposer(root: HTMLElement, s: GameState, on: PanelHandlers): void {
-  root.querySelector(".composer")?.replaceWith(renderComposer(s, on));
+  root.querySelector(".composer-wrap")?.replaceWith(renderComposer(s, on));
+  markMissing(root, s);
 }

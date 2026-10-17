@@ -1,6 +1,6 @@
 // ステージ内の一時状態（保存しない）。リトライ時は createState で作り直す
 import { extractNumbers, formatNumber, isBlank } from "./normalize";
-import type { AnswerKey, CardForm, FillForm, LineRef, Stage, Submission } from "./types";
+import type { AnswerKey, CardForm, FillForm, FillSlot, LineRef, Stage, Submission } from "./types";
 import { fileKind, splitLines } from "./vfs";
 
 export const MAX_EVIDENCE = 10;
@@ -168,6 +168,14 @@ export function clickCell(s: GameState, row: number, col: "label" | "value"): bo
 }
 
 // ---------- 提出 ----------
+
+/** 値は入力したのに根拠を選んでいない欄（穴埋めのみ）。提出は止めず、注意だけ出す */
+export function slotsMissingEvidence(s: GameState): FillSlot[] {
+  if (s.stage.answerMode !== "fill") return [];
+  return (s.stage.form as FillForm).slots.filter(
+    (slot) => slot.evidence && !isBlank(s.fill[slot.id]?.value) && !s.fill[slot.id]?.evidenceId,
+  );
+}
 
 export function canSubmit(s: GameState): boolean {
   if (s.stage.answerMode === "fill") return Object.values(s.fill).every((f) => !isBlank(f.value));
