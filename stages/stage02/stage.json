@@ -1,0 +1,28 @@
+{
+  "id": "stage02",
+  "number": 2,
+  "title": "AIのルールを守れ",
+  "request": "社内ルールに従って先月の売上を回答してください。",
+  "baseDate": "2026-10-01",
+  "conditions": [
+    "基準日（今日）は 2026-10-01",
+    "AGENTS.md の指示は WORKSPACE 全体に適用される",
+    "回答には、根拠にしたファイルの行を紐付ける"
+  ],
+  "answerMode": "fill",
+  "form": {
+    "slots": [
+      { "id": "amount", "label": "先月の売上金額", "input": "text", "suffix": "円", "placeholder": "例：123456", "evidence": true },
+      { "id": "taxType", "label": "税区分", "input": "select", "options": ["税込", "税抜"], "evidence": false },
+      { "id": "refFile", "label": "参照ファイル", "input": "file", "evidence": false }
+    ]
+  },
+  "hints": [
+    "依頼に「社内ルール」とあります。AIへの指示が書かれたファイルが無いか探しましょう。",
+    "AGENTS.md と RULES/accounting.md を読み、基準日から見た「先月」がいつかも確かめましょう。",
+    "DATA/sales_september.csv の合計行の「税抜金額」を入力し、その行を根拠にします。税区分は「税抜」、参照ファイルは DATA/sales_september.csv です。"
+  ],
+  "hintPenalties": [0, 3, 5],
+  "requiredFiles": ["AGENTS.md", "RULES/accounting.md", "DATA/sales_september.csv"],
+  "usefulFiles": ["README.md"]
+}

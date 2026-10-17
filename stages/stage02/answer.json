@@ -1,0 +1,19 @@
+{
+  "slots": {
+    "amount": { "label": "先月の売上金額", "accept": ["1420000"], "normalize": "number" },
+    "taxType": { "label": "税区分", "accept": ["税抜"], "normalize": "text", "accuracy": false },
+    "refFile": { "label": "参照ファイル", "accept": ["DATA/sales_september.csv"], "normalize": "text", "accuracy": false }
+  },
+  "requiredEvidence": [
+    { "slot": "amount", "file": "DATA/sales_september.csv", "line": 7 }
+  ],
+  "rules": [
+    { "id": "taxExcluded", "desc": "売上を税抜きで回答した（AGENTS.md ルール1）", "check": { "type": "slotAccepted", "slot": "taxType" } },
+    { "id": "refFile", "desc": "参照ファイルに DATA/sales_september.csv を書いた（AGENTS.md ルール3）", "check": { "type": "slotAccepted", "slot": "refFile" } },
+    { "id": "readAgents", "desc": "作業前に AGENTS.md を読んだ", "check": { "type": "viewed", "file": "AGENTS.md" } }
+  ],
+  "fatal": [
+    { "id": "fabricated", "desc": "どのファイルにも無い数値を、根拠付きで回答した", "check": { "type": "fabricatedNumber" } }
+  ],
+  "explanation": "基準日 2026-10-01 の「先月」は9月です。AGENTS.md と RULES/accounting.md により売上は税抜金額で答えるため、DATA/sales_september.csv の合計行の税抜金額 1,420,000円 が正解です。税込金額 1,562,000円 は参考値です。"
+}

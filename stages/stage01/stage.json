@@ -1,0 +1,26 @@
+{
+  "id": "stage01",
+  "number": 1,
+  "title": "ファイルを探せ",
+  "request": "9月の売上金額を教えてください。",
+  "baseDate": "2026-10-01",
+  "conditions": [
+    "WORKSPACE 内のファイルに書かれていることだけを根拠にする",
+    "回答には、根拠にしたファイルの行を紐付ける",
+    "このステージはヒントを使っても減点されない"
+  ],
+  "answerMode": "fill",
+  "form": {
+    "slots": [
+      { "id": "amount", "label": "9月の売上金額", "input": "text", "suffix": "円", "placeholder": "例：123456", "evidence": true }
+    ]
+  },
+  "hints": [
+    "売上の数字は、データが入っていそうなフォルダにあるはずです。README.md も手がかりになります。",
+    "DATA フォルダの september.csv を開いてみましょう。",
+    "september.csv の最終行「合計」の金額を入力します。その行を選んで「証拠に追加」し、根拠に選びます。"
+  ],
+  "hintPenalties": [0, 0, 0],
+  "requiredFiles": ["DATA/september.csv"],
+  "usefulFiles": ["README.md"]
+}

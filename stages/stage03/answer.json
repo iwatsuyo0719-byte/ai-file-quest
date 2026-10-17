@@ -1,0 +1,33 @@
+{
+  "slots": {
+    "aug": { "label": "8月売上", "accept": ["960000"], "normalize": "number" },
+    "sep": { "label": "9月売上", "accept": ["1250000"], "normalize": "number" },
+    "diff": { "label": "増減額", "accept": ["290000"], "normalize": "number" },
+    "rate": { "label": "増減率", "accept": ["30.2"], "normalize": "percent" }
+  },
+  "labelSlots": { "8月売上": "aug", "9月売上": "sep", "増減額": "diff", "増減率": "rate" },
+  "requiredEvidence": [
+    { "slot": "aug", "file": "DATA/august.csv", "line": 8 },
+    { "slot": "sep", "file": "DATA/september.csv", "line": 7 }
+  ],
+  "rules": [
+    {
+      "id": "afterReturns",
+      "desc": "8月は返品控除後の数値を使った（DATA/notes.md・用語集）",
+      "check": {
+        "type": "all",
+        "checks": [
+          { "type": "slotAccepted", "slot": "aug" },
+          { "type": "slotNotIn", "slot": "diff", "values": ["250000"], "normalize": "number" },
+          { "type": "slotNotIn", "slot": "rate", "values": ["25.0"], "normalize": "percent" }
+        ]
+      }
+    },
+    { "id": "rateDecimals", "desc": "増減率を小数第1位で書いた（AGENTS.md ルール2）", "check": { "type": "decimals", "slot": "rate", "digits": 1 } },
+    { "id": "templateOrder", "desc": "テンプレートの項目順（8月売上→9月売上→増減額→増減率）で並べた", "check": { "type": "rowOrder", "order": ["aug", "sep", "diff", "rate"] } }
+  ],
+  "fatal": [
+    { "id": "fabricated", "desc": "どのファイルにも無い数値を、根拠付きで回答した", "check": { "type": "fabricatedNumber" } }
+  ],
+  "explanation": "用語集では「売上」は返品を差し引いた後の金額なので、8月は返品控除後の 960,000円 を使います。9月は 1,250,000円。増減額は +290,000円、増減率は 290,000 ÷ 960,000 × 100 = 30.208…% を小数第1位に四捨五入した 30.2% です。返品前の 1,000,000円 を使うと +250,000円・25.0% になってしまいます。"
+}

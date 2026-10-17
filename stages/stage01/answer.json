@@ -1,0 +1,13 @@
+{
+  "slots": {
+    "amount": { "label": "9月の売上金額", "accept": ["1250000"], "normalize": "number" }
+  },
+  "requiredEvidence": [
+    { "slot": "amount", "file": "DATA/september.csv", "line": 7 }
+  ],
+  "rules": [],
+  "fatal": [
+    { "id": "fabricated", "desc": "どのファイルにも無い数値を、根拠付きで回答した", "check": { "type": "fabricatedNumber" } }
+  ],
+  "explanation": "9月の売上は DATA/september.csv の最終行「合計」にある 1,250,000円 です。NOTES/memo.md は感想だけで数字の根拠にならず、august.csv は別の月のデータです。"
+}

@@ -1,0 +1,27 @@
+{
+  "id": "stage03",
+  "number": 3,
+  "title": "複数資料を照合せよ",
+  "request": "8月と9月の売上を比較し、増減額と増減率をまとめてください。",
+  "baseDate": "2026-10-01",
+  "conditions": [
+    "AGENTS.md の指示は WORKSPACE 全体に適用される",
+    "金額の値カードは、証拠に追加した行から作られる",
+    "増減額・増減率のカードは候補の中から選ぶ（正しくない候補も混ざっている）"
+  ],
+  "answerMode": "cards",
+  "form": {
+    "rows": 4,
+    "columns": ["項目", "値"],
+    "labelCards": ["増減率", "9月売上", "前年同月比", "8月売上", "増減額"],
+    "candidateCards": ["+250,000", "30.21%", "-290,000", "23.2%", "+290,000", "25.0%", "30.2%"]
+  },
+  "hints": [
+    "まず AGENTS.md で、表の形式と増減率の書き方を確認しましょう。",
+    "DATA/notes.md と REFERENCES/glossary.md で、8月の「売上」にどの合計を使うべきかを確かめましょう。",
+    "8月は august.csv の「返品控除後」の行、9月は september.csv の合計行を証拠に追加して値カードにします。項目は TEMPLATES/comparison.md と同じ順に並べ、増減率は小数第1位のカードを選びます。"
+  ],
+  "hintPenalties": [0, 3, 5],
+  "requiredFiles": ["AGENTS.md", "DATA/august.csv", "DATA/september.csv", "DATA/notes.md", "REFERENCES/glossary.md", "TEMPLATES/comparison.md"],
+  "usefulFiles": ["README.md"]
+}

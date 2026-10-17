@@ -1,0 +1,41 @@
+/* デザイントークン：Claude Code デスクトップ版を参考にした暖色寄りのダークテーマ */
+:root {
+  --bg: #262624;
+  --bg-deep: #1f1e1d;
+  --surface: #30302e;
+  --surface-2: #393937;
+  --surface-hover: #3a3a37;
+  --border: #3e3e3a;
+  --border-strong: #55554f;
+
+  --text: #f5f4ef;
+  --text-2: #c9c7bd;
+  --muted: #9b998f;
+
+  --accent: #d97757;
+  --accent-hover: #e38a6c;
+  --accent-ink: #1f1e1d;
+  --accent-soft: rgba(217, 119, 87, 0.14);
+  --accent-line: rgba(217, 119, 87, 0.55);
+
+  --ok: #8fbf7a;
+  --ok-soft: rgba(143, 191, 122, 0.14);
+  --bad: #ef8a80;
+  --bad-soft: rgba(239, 138, 128, 0.13);
+  --info: #8fb3d9;
+  --info-soft: rgba(143, 179, 217, 0.14);
+  --warn: #e5c07b;
+
+  --rank-s: #e5c07b;
+  --rank-a: #d97757;
+  --rank-b: #8fb3d9;
+  --rank-c: #9b998f;
+
+  --font: "Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "M PLUS 1 Code", ui-monospace, Consolas, monospace;
+
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 14px;
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
